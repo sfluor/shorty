@@ -19,7 +19,7 @@ const (
 var notFound = errors.New("redis: nil")
 
 func shorten(client *redis.Client, url string) string {
-	stored, val := isAlreadyStored(url)
+	stored, val := isAlreadyStored(client, url)
 	// If it's already stored just return the tag
 	if stored {
 		return val
@@ -52,7 +52,7 @@ func unShorten(client *redis.Client, tag string) string {
 }
 
 // Check if an url has already been shortened
-func isAlreadyStored(url string) (bool, string) {
+func isAlreadyStored(client *redis.Client, url string) (bool, string) {
 	val, err := client.Get(url).Result()
 	// If an error occurs and val is not empty (meaning it does exist)
 	if err != nil && val != "" {
