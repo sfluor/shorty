@@ -10,6 +10,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/go-redis/redis"
 	"github.com/gorilla/mux"
+	client "github.com/influxdata/influxdb/client/v2"
 )
 
 // Url type to decode json from post request
@@ -24,14 +25,27 @@ type Shortened struct {
 	Error string `json:error,omitempty`
 }
 
-var client *redis.Client = redis.NewClient(&redis.Options{
+// Redis client
+var redisClient *redis.Client = redis.NewClient(&redis.Options{
 	Addr:     "redis:6379",
 	Password: "",
 	DB:       0,
 })
 
+// InfluxDB client
+var influxClient, err = client.NewHTTPClient(client.HTTPConfig{
+	Addr: "http://influxdb:8086",
+})
+
 func main() {
-	pong, err := client.Ping().Result()
+	// If connection to influxdb failed
+	if err != nil {
+		logrus.Fatalf("Couldn't connect to Influxdb: %s", err)
+	}
+	logrus.Info("Connected to Influxdb")
+	createDB(influxClient)
+
+	pong, err := redisClient.Ping().Result()
 	if err != nil {
 		logrus.Fatalf("Couldn't connect to redis store: %s", err)
 	}
@@ -53,6 +67,10 @@ func main() {
 
 	// Standard path to redirect
 	r.HandleFunc("/s/{token}", redirect)
+
+	// Analytics
+	r.HandleFunc("/analytics/{token}", analytics)
+
 	http.Handle("/", r)
 	logrus.Info("Server started")
 
@@ -72,7 +90,7 @@ func shortener(w http.ResponseWriter, r *http.Request) {
 		logrus.Errorf("An error occured during json decoding: %s", err)
 	}
 	logrus.Infof("Asking to shorten: %s", u.Url)
-	tag := shorten(client, u.Url)
+	tag := shorten(redisClient, u.Url)
 	logrus.Infof("Result is tag: %s", tag)
 	// Return JSON
 	payload := Shortened{Tag: tag, Url: u.Url}
@@ -89,7 +107,7 @@ func unShortener(w http.ResponseWriter, r *http.Request) {
 	// Check if tag is not empty
 	if tag != "" {
 		// TODO: check if url is tag exists if it doesn't return an error
-		url := unShorten(client, tag)
+		url := unShorten(redisClient, tag)
 		payload := Shortened{Tag: tag, Url: url}
 		// Return JSON
 		err := json.NewEncoder(w).Encode(payload)
@@ -105,8 +123,8 @@ func unShortener(w http.ResponseWriter, r *http.Request) {
 func redirect(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	// We parse the url otherwise url likes google.com redirect internally
-	url := formatUrl(unShorten(client, vars["token"]))
-
+	url := formatUrl(unShorten(redisClient, vars["token"]))
+	addData(influxClient, url)
 	http.Redirect(w, r, url, 302)
 	fmt.Fprint(w, "Redirecting...")
 }
@@ -125,4 +143,12 @@ func formatUrl(data string) string {
 	}
 	// Else return the url
 	return _url.String()
+}
+
+func analytics(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
+	url := formatUrl(unShorten(redisClient, vars["token"]))
+	data := getDataOfUrl(influxClient, url)
+	fmt.Fprintf(w, fmt.Sprintf("%s\n%v\n", data, data))
 }
