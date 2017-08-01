@@ -7,17 +7,24 @@
 </head>
 
 <body>
-    <div class="container">
-
+    <div class="top">
         <h1>Shorty</h1>
+        <div class="descript">Shorty is a tiny url shortener with awesome analytics</div>
+    </div>
+    <div class="bot">
         <div class="form">
-            <input name="url" id="urlField" />
-            <button id="shorten">Shorten ! </button>
+            <div class="label"> Just type the URL you want to shorten below and hit Shorten !</div>
+            <input name="url" placeholder="yourawesome.url" type="text" id="urlField" />
+            <input type="button" id="shorten" value="Shorten !" />
         </div>
         <div id="tag"></div>
-        <script src="app.js">
-        </script>
     </div>
+    <div class="footer">
+        <div>All your URLs shortened links are public and so are analytics</div>
+    </div>
+
+    <script src="app.js">
+    </script>
 </body>
 
 </html>
