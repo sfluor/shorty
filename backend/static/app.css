@@ -90,3 +90,9 @@ input[type=text]:focus{
     font-weight: bold;
     font-size: 25px;
 }
+
+#tag:link {
+    color: #57607c;
+    font-weight: bold;
+    font-size: 25px;
+}
