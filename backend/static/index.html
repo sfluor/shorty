@@ -4,18 +4,22 @@
     <script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
         crossorigin="anonymous"></script>
     <link rel="stylesheet" type="text/css" href="app.css">
+    <link rel="icon" href="./img/scissors.svg" />
 </head>
 
 <body>
     <div class="top">
-        <h1>Shorty</h1>
+        <div class="brand">
+            <img src="./img/scissors.svg" height="100px" width="100px" />
+            <h1>Shorty</h1>
+        </div>
         <div class="descript">Shorty is a tiny url shortener with awesome analytics</div>
     </div>
     <div class="bot">
         <div class="form">
             <div class="label"> Just type the URL you want to shorten below and hit Shorten !</div>
-            <input name="url" placeholder="yourawesome.url" type="text" id="urlField" />
-            <input type="button" id="shorten" value="Shorten !" />
+            <input name="url" required placeholder="yourawesome.url" type="url" id="urlField" />
+            <input type="button" onclick='return false;' id="shorten" value="Shorten !" />
         </div>
         <a id="tag"></a>
     </div>
