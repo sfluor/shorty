@@ -18,6 +18,11 @@ type Shortened struct {
 	Error string `json:error,omitempty`
 }
 
+// Analytics type to receive json
+type Analytics struct {
+	ClickNumber int `json:"clickNumber"`
+}
+
 const backendUrl = "http://localhost:8080"
 
 func main() {
@@ -30,7 +35,14 @@ func main() {
 	// If the user wants to reverse the url
 	if *reverse && *tag != "" {
 		data := unShortenURL(*tag)
+		analytics := getAnalytics(*tag)
+		if data.Url == "" {
+			fmt.Println("Sorry this url doesn't seem to exist in records")
+			return
+		}
 		fmt.Printf("%s/s/%s corresponds to the url: %s\n", backendUrl, *tag, data.Url)
+		// Also print analytics
+		fmt.Printf("Number of clicks: %v\n", analytics.ClickNumber)
 	} else if *url != "" {
 		data := shortenURL(*url)
 		fmt.Printf("Url %s has been shortened to %s/s/%s\n", *url, backendUrl, data.Tag)
@@ -80,4 +92,20 @@ func extractAndSend(body io.ReadCloser) Shortened {
 		logrus.Fatalf("An error occured during the json decoding: %s", err)
 	}
 	return target
+}
+
+// getAnalytics simply query the analytics api
+func getAnalytics(tag string) Analytics {
+	reqUrl := fmt.Sprintf("%s/analytics/%s", backendUrl, tag)
+	resp, err := http.Get(reqUrl)
+	if err != nil {
+		logrus.Fatalf("An error occured during the request: %s", err)
+	}
+	defer resp.Body.Close()
+	var a Analytics
+	err = json.NewDecoder(resp.Body).Decode(&a)
+	if err != nil {
+		logrus.Fatalf("An error occured during the json decoding: %s", err)
+	}
+	return a
 }
