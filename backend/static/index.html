@@ -3,6 +3,7 @@
 <head>
     <script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
         crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.6.0/Chart.bundle.min.js"></script>
     <link rel="stylesheet" type="text/css" href="app.css">
     <link rel="icon" href="./img/scissors.svg" />
 </head>
@@ -21,6 +22,10 @@
             <input name="url" required placeholder="yourawesome.url" type="url" id="urlField" />
             <input type="submit" id="shorten" value="Shorten !" />
         </form>
+        <div class="analytics">
+            <canvas id="clickNumber" height="250" width="150"></canvas>
+            <canvas id="clickTimes" height="250" width="150"></canvas>
+        </div>
         <a id="tag"></a>
     </div>
     <div class="footer">

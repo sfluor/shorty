@@ -46,5 +46,3 @@ shortcli provides a simple way of interacting with the API:
 
 - Responsive web client
 - Check if url that are submitted are valid urls (by trying to request for example)
-- InfluxDB store with analytics
-- Display analytics on the Web client and on the CLI
