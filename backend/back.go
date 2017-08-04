@@ -22,7 +22,14 @@ type Url struct {
 type Shortened struct {
 	Tag   string `json:"tag"`
 	Url   string `json:"url"`
-	Error string `json:error,omitempty`
+	Error string `json:"error",omitempty`
+}
+
+// Analytics type to send json
+type Analytics struct {
+	ClickNumber int     `json:"clickNumber"`
+	ClickTimes  []int64 `json:"clickTimes"`
+	Error       string  `json:"error",omitempty`
 }
 
 // Redis client
@@ -149,6 +156,35 @@ func analytics(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	url := formatUrl(unShorten(redisClient, vars["token"]))
-	data := getDataOfUrl(influxClient, url)
-	fmt.Fprintf(w, fmt.Sprintf("%s\n%v\n", data, data))
+	data, ok := getDataOfUrl(influxClient, url).([][]interface{})
+
+	// Type assertion failed
+	if !ok {
+		payload := Analytics{Error: "Sorry an error occured"}
+		logrus.Error("Error during type assertion")
+		// TODO: error handling here
+		json.NewEncoder(w).Encode(payload)
+		return
+	}
+
+	// Extract our data
+	fData, err := extractTime(data)
+	if err != nil {
+		payload := Analytics{Error: "Sorry an error occured"}
+		// TODO: error handling here
+		json.NewEncoder(w).Encode(payload)
+		return
+	}
+
+	payload := Analytics{ClickNumber: len(fData), ClickTimes: fData}
+	err = json.NewEncoder(w).Encode(payload)
+	if err != nil {
+		logrus.Errorf("An error occured during json encoding: %s", err)
+	}
+
+	// payload := Analytics{ClickNumber: len(data.([][]interface{}))}
+	// err = json.NewEncoder(w).Encode(payload)
+	// if err != nil {
+	// 	logrus.Errorf("An error occured during json encoding: %s", err)
+	// }
 }

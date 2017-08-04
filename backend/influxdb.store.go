@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -10,6 +11,9 @@ import (
 
 // Name of our database
 const dbName = "shorty"
+
+// Time layout of our timestamps
+const layout = "2006-01-02T15:04:05Z"
 
 func addData(influxClient client.Client, url string) {
 	// Preparing our batch points to add data
@@ -80,4 +84,24 @@ func getDataOfUrl(influxClient client.Client, url string) interface{} {
 	result := res[0].Series[0].Values
 	logrus.Infof("Found data: %v", result)
 	return result
+}
+
+// extractTime takes data from influxdb store and returns time of various clicks
+func extractTime(data [][]interface{}) ([]int64, error) {
+	var times = []int64{}
+	for _, val := range data {
+		str, ok := val[0].(string)
+		if !ok {
+			logrus.Error("Error during type assertion")
+			return times, errors.New("Sorry an error occured")
+		}
+
+		t, err := time.Parse(layout, str)
+		if err != nil {
+			logrus.Errorf("Error during time parsing of: %s", str)
+			return times, err
+		}
+		times = append(times, t.Unix())
+	}
+	return times, nil
 }
