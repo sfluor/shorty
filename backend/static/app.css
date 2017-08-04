@@ -69,7 +69,7 @@ input[type=url]:focus {
 	background-image: url('img/linkwhite.svg');
 }
 
-.form {
+#form {
 	display: flex;
 	flex-direction: column;
 	justify-content: space-between;

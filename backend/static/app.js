@@ -1,5 +1,6 @@
 // Handling shortened links
-$("#shorten").click(function () {
+$("#form").submit(function (event) {
+    event.preventDefault();
     var path = "http://" + window.location.hostname + ":" + window.location.port;
     var url = $("#urlField").val();
     $.ajax({
@@ -17,9 +18,3 @@ $("#shorten").click(function () {
         }
     })
 })
-
-// Listen for user input in URLField and map it to the tag
-$("#urlField").bind("input", function () {
-    var str = $("#urlField").val()
-    $("#tag").text(str);
-});

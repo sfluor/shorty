@@ -16,11 +16,11 @@
         <div class="descript">Shorty is a tiny url shortener with awesome analytics</div>
     </div>
     <div class="bot">
-        <div class="form">
+        <form id="form">
             <div class="label"> Just type the URL you want to shorten below and hit Shorten !</div>
             <input name="url" required placeholder="yourawesome.url" type="url" id="urlField" />
-            <input type="button" onclick='return false;' id="shorten" value="Shorten !" />
-        </div>
+            <input type="submit" id="shorten" value="Shorten !" />
+        </form>
         <a id="tag"></a>
     </div>
     <div class="footer">
