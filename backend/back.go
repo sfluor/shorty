@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -89,22 +90,19 @@ func shortener(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Headers", "access-control-allow-origin, access-control-allow-headers")
 	w.Header().Set("Content-Type", "application/json")
 	b, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		logrus.Errorf("An error occured: %s", err)
-	}
+	handleInternalError(w, err)
+
 	var u Url
-	if err := json.Unmarshal(b, &u); err != nil {
-		logrus.Errorf("An error occured during json decoding: %s", err)
-	}
+	err = json.Unmarshal(b, &u)
+	handleInternalError(w, err)
+
 	logrus.Infof("Asking to shorten: %s", u.Url)
 	tag := shorten(redisClient, u.Url)
 	logrus.Infof("Result is tag: %s", tag)
 	// Return JSON
 	payload := Shortened{Tag: tag, Url: u.Url}
 	err = json.NewEncoder(w).Encode(payload)
-	if err != nil {
-		logrus.Errorf("An error occured during json encoding: %s", err)
-	}
+	handleInternalError(w, err)
 }
 
 func unShortener(w http.ResponseWriter, r *http.Request) {
@@ -118,9 +116,7 @@ func unShortener(w http.ResponseWriter, r *http.Request) {
 		payload := Shortened{Tag: tag, Url: url}
 		// Return JSON
 		err := json.NewEncoder(w).Encode(payload)
-		if err != nil {
-			logrus.Errorf("An error occured during json encoding: %s", err)
-		}
+		handleInternalError(w, err)
 	} else {
 		fmt.Fprintf(w, "Sorry your tag is empty")
 	}
@@ -130,7 +126,9 @@ func unShortener(w http.ResponseWriter, r *http.Request) {
 func redirect(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	// We parse the url otherwise url likes google.com redirect internally
-	url := formatUrl(unShorten(redisClient, vars["token"]))
+	url, err := formatUrl(unShorten(redisClient, vars["token"]))
+	handleInternalError(w, err)
+
 	addData(influxClient, url)
 	http.Redirect(w, r, url, 302)
 	fmt.Fprint(w, "Redirecting...")
@@ -139,52 +137,40 @@ func redirect(w http.ResponseWriter, r *http.Request) {
 // formatUrl correctly formats url
 //	Example:
 // 		formatUrl("google.com") outputs "http://google.com"
-func formatUrl(data string) string {
+func formatUrl(data string) (string, error) {
 	_url, err := url.Parse(data)
-	if err != nil {
-		logrus.Errorf("An error occured when parsing the url: %s", err)
-	}
 	// If scheme is empty (ie not http or https) just put http
 	if _url.Scheme == "" {
-		return fmt.Sprintf("http://%s", _url.String())
+		return fmt.Sprintf("http://%s", _url.String()), nil
 	}
 	// Else return the url
-	return _url.String()
+	return _url.String(), err
 }
 
 func analytics(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	url := formatUrl(unShorten(redisClient, vars["token"]))
+	url, err := formatUrl(unShorten(redisClient, vars["token"]))
+	handleInternalError(w, err)
 	data, ok := getDataOfUrl(influxClient, url).([][]interface{})
 
 	// Type assertion failed
 	if !ok {
-		payload := Analytics{Error: "Sorry an error occured"}
-		logrus.Error("Error during type assertion")
-		// TODO: error handling here
-		json.NewEncoder(w).Encode(payload)
-		return
+		handleInternalError(w, errors.New("Type assertion failed"))
 	}
 
 	// Extract our data
 	fData, err := extractTime(data)
-	if err != nil {
-		payload := Analytics{Error: "Sorry an error occured"}
-		// TODO: error handling here
-		json.NewEncoder(w).Encode(payload)
-		return
-	}
+	handleInternalError(w, err)
 
 	payload := Analytics{ClickNumber: len(fData), ClickTimes: fData}
 	err = json.NewEncoder(w).Encode(payload)
-	if err != nil {
-		logrus.Errorf("An error occured during json encoding: %s", err)
-	}
+	handleInternalError(w, err)
+}
 
-	// payload := Analytics{ClickNumber: len(data.([][]interface{}))}
-	// err = json.NewEncoder(w).Encode(payload)
-	// if err != nil {
-	// 	logrus.Errorf("An error occured during json encoding: %s", err)
-	// }
+func handleInternalError(w http.ResponseWriter, err error) {
+	if err != nil {
+		logrus.Errorf("An error occured: %s", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
