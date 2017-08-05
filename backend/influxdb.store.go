@@ -101,7 +101,8 @@ func extractTime(data [][]interface{}) ([]int64, error) {
 			logrus.Errorf("Error during time parsing of: %s", str)
 			return times, err
 		}
-		times = append(times, t.Unix())
+		// Pass the day doing %86400
+		times = append(times, t.Unix()%86400)
 	}
 	return times, nil
 }
