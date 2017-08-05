@@ -13,14 +13,10 @@ $("#form").submit(function(event) {
     url: path + "/shorten",
     success: function(msg) {
       var shortenedUrl = path + "/s/" + msg.tag;
-      var analytics = displayAnalytics(path, msg.tag, url);
-      if (analytics.error) {
-        $("#tag").text("Sorry an error occured");
-      } else {
-        // Click number
-        $("#tag").text("Your shortened url: " + shortenedUrl);
-        $("#tag").attr("href", shortenedUrl);
-      }
+      displayAnalytics(path, msg.tag, url);
+      // Click number
+      $("#tag").text("Your shortened url: " + shortenedUrl);
+      $("#tag").attr("href", shortenedUrl);
     }
   });
 });
